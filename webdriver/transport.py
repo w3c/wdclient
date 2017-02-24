@@ -43,7 +43,7 @@ class Response(object):
             #
             # > 4. If data is not null, let response's body be a JSON Object
             #      with a key `value` set to the JSON Serialization of data.
-            assert "value" in body
+            assert "value" in body or "error" in body
 
         return Response(status, body)
 
