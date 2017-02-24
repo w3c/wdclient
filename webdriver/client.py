@@ -31,43 +31,49 @@ def command(func):
 
 
 class Timeouts(object):
+
     def __init__(self, session):
         self.session = session
-        self._script = 30
-        self._load = 0
-        self._implicit_wait = 0
 
-    def _set_timeouts(self, name, value):
-        body = {"type": name,
-                "ms": value * 1000}
-        return self.session.send_command("POST", "timeouts", body)
+    def _get(self, key=None):
+        timeouts = self.session.send_command("GET", "timeouts")
+        if key is not None:
+            return timeouts[key]
+        return timeouts
+
+    def _set(self, key, secs):
+        body = {key: secs * 1000}
+        timeouts = self.session.send_command("POST", "timeouts", body)
+        return timeouts[key]
 
     @property
     def script(self):
-        return self._script
+        return self._get("script")
 
     @script.setter
-    def script(self, value):
-        self._set_timeouts("script", value)
-        self._script = value
+    def script(self, secs):
+        return self._set("script", secs)
 
     @property
-    def load(self):
-        return self._load
+    def page_load(self):
+        return self._get("pageLoad")
 
-    @load.setter
-    def set_load(self, value):
-        self._set_timeouts("page load", value)
-        self._script = value
+    @page_load.setter
+    def page_load(self, secs):
+        return self._set("pageLoad", secs)
 
     @property
-    def implicit_wait(self):
-        return self._implicit_wait
+    def implicit(self):
+        return self._get("implicit")
 
-    @implicit_wait.setter
-    def implicit_wait(self, value):
-        self._set_timeouts("implicit wait", value)
-        self._implicit_wait = value
+    @implicit.setter
+    def implicit(self, secs):
+        return self._set("implicit", secs)
+
+    def __str__(self):
+        name = "%s.%s" % (self.__module__, self.__class__.__name__)
+        return "<%s script=%d, load=%d, implicit=%d>" % \
+            (name, self.script, self.page_load, self.implicit)
 
 
 class ActionSequence(object):
@@ -172,26 +178,26 @@ class Window(object):
     @property
     @command
     def size(self):
-        resp = self.session.send_command("GET", "window/size")
+        resp = self.session.send_command("GET", "window/rect")
         return (resp["width"], resp["height"])
 
     @size.setter
     @command
     def size(self, (width, height)):
         body = {"width": width, "height": height}
-        self.session.send_command("POST", "window/size", body)
+        self.session.send_command("POST", "window/rect", body)
 
     @property
     @command
     def position(self):
-        resp = self.session.send_command("GET", "window/position")
+        resp = self.session.send_command("GET", "window/rect")
         return (resp["x"], resp["y"])
 
     @position.setter
     @command
     def position(self, (x, y)):
         body = {"x": x, "y": y}
-        self.session.send_command("POST", "window/position", body)
+        self.session.send_command("POST", "window/rect", body)
 
     @property
     @command
@@ -493,8 +499,8 @@ class Session(object):
             "script": script,
             "args": args
         }
-        return self.send_command("POST", "execute", body)
-
+        return self.send_command("POST", "execute/sync", body)
+    
     @command
     def execute_async_script(self, script, args=None):
         if args is None:
@@ -504,7 +510,7 @@ class Session(object):
             "script": script,
             "args": args
         }
-        return self.send_command("POST", "execute_async", body)
+        return self.send_command("POST", "execute/async", body)
 
     #[...]
 
