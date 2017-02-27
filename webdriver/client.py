@@ -386,11 +386,7 @@ class Session(object):
         url = urlparse.urljoin("session/%s/" % self.session_id, uri)
         response = self.send_raw_command(method, url, body)
 
-        rv = response.body["value"]
-        if not rv:
-            rv = None
-
-        return rv
+        return response.body["value"]
 
     @property
     @command
