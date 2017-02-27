@@ -317,21 +317,20 @@ class Session(object):
         #body["capabilities"] = caps
         body = caps
 
-        response = self.send_raw_command("POST", "session", body=body)
+        value = self.send_command("POST", "session", body=body, requires_session=False)
 
-        self.session_id = response.body["value"]["sessionId"]
+        self.session_id = value["sessionId"]
 
         if self.extension_cls:
             self.extension = self.extension_cls(self)
 
-        return response.body["value"]
+        return value
 
     def end(self):
         if self.session_id is None:
             return
 
-        url = "session/%s" % self.session_id
-        self.send_raw_command("DELETE", url)
+        self.send_command("DELETE", "session/%s" % self.session_id, requires_session=False)
 
         self.session_id = None
         self.timeouts = None
@@ -355,7 +354,7 @@ class Session(object):
         """
         return self.transport.send(method, url, body, headers)
 
-    def send_command(self, method, uri, body=None):
+    def send_command(self, method, uri, body=None, requires_session=True):
         """
         Send a command to the remote end and validate its success.
 
@@ -363,6 +362,8 @@ class Session(object):
         :param uri: "Command part" of the HTTP request URL,
             e.g. `window/rect`.
         :param body: Optional body of the HTTP request.
+        :param requires_session: Optional flag defining whether a `session_id`
+            must be defined prior to invocation and injected into the URL.
 
         :return: `None` if the HTTP response body was empty, otherwise
             the result of parsing the body as JSON.
@@ -372,10 +373,14 @@ class Session(object):
         :raises error.WebDriverException: If the remote end returns
             an error.
         """
-        if self.session_id is None:
-            raise error.SessionNotCreatedException()
+        if requires_session:
+            if self.session_id is None:
+                raise error.SessionNotCreatedException()
 
-        url = urlparse.urljoin("session/%s/" % self.session_id, uri)
+            url = urlparse.urljoin("session/%s/" % self.session_id, uri)
+        else:
+            url = uri
+
         response = self.send_raw_command(method, url, body)
         value = response.body["value"]
 
