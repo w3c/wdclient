@@ -311,11 +311,11 @@ class Session(object):
 
         caps = {}
         if self.desired_capabilities is not None:
-            caps["desiredCapabilities"] = self.desired_capabilities
+            caps["firstMatch"] = self.desired_capabilities
         if self.required_capabilities is not None:
-            caps["requiredCapabilities"] = self.required_capabilities
-        #body["capabilities"] = caps
-        body = caps
+            caps["alwaysMatch"] = self.required_capabilities
+
+        body["capabilities"] = caps
 
         value = self.send_command("POST", "session", body=body)
         self.session_id = value["sessionId"]
